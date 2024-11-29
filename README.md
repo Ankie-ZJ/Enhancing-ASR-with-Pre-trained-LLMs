@@ -68,6 +68,7 @@ python generate_best_result.py --input_dir /ocean/projects/cis240125p/jzhang45/E
 ## TODO
 
 - [ ] Add evaluation scripts.
+- [ ] Add the ability in `llm_scoring.py` to control how many hypotheses will be passed for scoring.
 - [ ] Analyze how different prompts influence accuracy (e.g., score all hypotheses together in a single prompt vs. score one hypothesis at a time, or use different prompt templates to evaluate their effects on accuracy).
 - [ ] Analyze how different temperature settings influence scoring (e.g., test with temperatures like 0.1, 0.5, 1.0, and compare their effects on scores).
 - [ ] Analyze how the number of parameters influences scoring (e.g., have the LLM score a few hypotheses multiple times—e.g., 10 iterations—and analyze the score distribution to evaluate consistency and variability).
