@@ -119,13 +119,13 @@ def main():
     scorer = LLMScoer()
 
     # Create the output directory if it does not exist
-    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # Get all the nbest files in the input directory
-    nbest_files = [file_name for file_name in os.listdir(args.input_dir) if file_name.endswith(".json")]
+    nbest_files = [file_name for file_name in os.listdir(input_dir) if file_name.endswith(".json")]
 
     for file_name in tqdm(nbest_files, desc="Processing nbest files"):
-        nbest_file_path = os.path.join(args.input_dir, file_name)
+        nbest_file_path = os.path.join(input_dir, file_name)
         with open(nbest_file_path, "r") as f:
             data = json.load(f)
 
@@ -139,7 +139,7 @@ def main():
                 value["temp"] = temperature
 
         # Save the updated data to a new file
-        output_file_path = os.path.join(args.output_dir, file_name)
+        output_file_path = os.path.join(output_dir, file_name)
         with open(output_file_path, "w") as f:
             json.dump(data, f, indent=4)
 
