@@ -1,8 +1,7 @@
 # Enhancing ASR with Pre-trained LLMs
-
-
----
-
+- Jing Zhang (jingzha4@andrew.cmu.edu)
+- Yuliang Jing
+- Fengyifan Chen
 ## Set Up Environment
 
 To set up the environment, run the following script:
@@ -16,7 +15,6 @@ Then setup your Hugging Face token:
 export HF_TOKEN=<your_hf_token>
 ```
 
----
 ## Steps to Generate and Process N-Best Hypotheses, and Perform Rescoring
 ### Step 1: Run ASR to Generate N-Best Hypotheses
 ```bash
@@ -66,3 +64,13 @@ To generate the final result file (text, token, token_int) for evaluation, run `
 ```bash
 python generate_best_result.py --input_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/weighted_score/test_clean --output_dir result/test_clean
 ```
+
+## TODO
+
+- [ ] Add evaluation scripts.
+- [ ] Analyze how different prompts influence accuracy (e.g., score all hypotheses together in a single prompt vs. score one hypothesis at a time, or use different prompt templates to evaluate their effects on accuracy).
+- [ ] Analyze how different temperature settings influence scoring (e.g., test with temperatures like 0.1, 0.5, 1.0, and compare their effects on scores).
+- [ ] Analyze how the number of parameters influences scoring (e.g., have the LLM score a few hypotheses multiple times—e.g., 10 iterations—and analyze the score distribution to evaluate consistency and variability).
+- [ ] Analyze how the number of n-best hypotheses influences accuracy (e.g., experiment with different `nbest` values such as 3, 5, 10, or 20 and compare their impact on overall ASR accuracy).
+- [ ] Analyze how different LLMs influence scoring (e.g., compare scoring performance using models).
+
