@@ -6,7 +6,6 @@ from tabulate import tabulate  # For formatted table output
 import jiwer  # Ensure the jiwer library is installed
 from tokenizer import CharTokenizer
 import string
-import os
 
 def calculate_cer(hyp: str, ref: str, tokenizer: CharTokenizer) -> (float, dict):
     """
@@ -155,8 +154,6 @@ def load_hypotheses_json(file_path: str) -> list:
         print(f"Error reading hypotheses file: {e}")
         sys.exit(1)
 
-
-import os
 
 if __name__ == "__main__":
     # Parse command-line arguments
