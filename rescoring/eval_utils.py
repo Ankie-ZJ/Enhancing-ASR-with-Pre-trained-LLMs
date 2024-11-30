@@ -4,34 +4,54 @@ import sys
 import Levenshtein  # Ensure the python-Levenshtein library is installed
 from tabulate import tabulate  # For formatted table output
 import jiwer  # Ensure the jiwer library is installed
+from tokenizer import CharTokenizer
+import string
 
-
-def calculate_cer(hyp: str, ref: str) -> (float, dict):
+def calculate_cer(hyp: str, ref: str, tokenizer: CharTokenizer) -> (float, dict):
     """
     Calculate Character Error Rate (CER) and provide error classification.
     Returns CER score and a dictionary with counts of correct characters, substitutions, deletions, and insertions.
     """
-    hyp_chars = list(hyp)
-    ref_chars = list(ref)
+    # Define characters to exclude from removal (e.g., keep `'`)
+    excluded_punctuation = "'"
+    allowed_characters = string.punctuation.replace(excluded_punctuation, "")
+
+    # Preprocess hypothesis and reference
+    hyp = hyp.translate(str.maketrans("", "", allowed_characters)).upper()
+    ref = ref.translate(str.maketrans("", "", allowed_characters)).upper()
+
+    # Tokenize hypothesis and reference
+    hyp_tokens = tokenizer.text2tokens(hyp.strip())
+    ref_tokens = tokenizer.text2tokens(ref.strip())
+
+    # Convert tokens back to strings (retaining spaces)
+    hyp_chars = "".join(hyp_tokens).replace(tokenizer.space_symbol, " ").strip()
+    ref_chars = "".join(ref_tokens).replace(tokenizer.space_symbol, " ").strip()
 
     if len(ref_chars) == 0:
-        return 0.0, {"correct": 0, "substitutions": 0, "deletions": 0, "insertions": 0}
+        if len(hyp_chars) == 0:
+            return 0.0, {"correct": 0, "substitutions": 0, "deletions": 0, "insertions": 0}
+        else:
+            return 100.0, {"correct": 0, "substitutions": 0, "deletions": 0, "insertions": len(hyp_chars)}
 
-    e_distance = Levenshtein.distance(''.join(ref_chars), ''.join(hyp_chars))
+    e_distance = Levenshtein.distance(ref_chars, hyp_chars)
     score = e_distance / len(ref_chars) * 100
 
     # Get detailed edit operations
-    ops = Levenshtein.editops(''.join(ref_chars), ''.join(hyp_chars))
-    substitutions = sum(1 for op in ops if op[0] == 'replace')
-    deletions = sum(1 for op in ops if op[0] == 'delete')
-    insertions = sum(1 for op in ops if op[0] == 'insert')
+    ops = Levenshtein.editops(ref_chars, hyp_chars)
+    # Count substitutions, deletions, and insertions
+    substitutions = sum(1 for op in ops if op[0] == "replace")
+    deletions = sum(1 for op in ops if op[0] == "delete")
+    insertions = sum(1 for op in ops if op[0] == "insert")
+
+    # Calculate correct characters
     correct = len(ref_chars) - (substitutions + deletions)
 
     return score, {
         "correct": correct,
         "substitutions": substitutions,
         "deletions": deletions,
-        "insertions": insertions
+        "insertions": insertions,
     }
 
 
@@ -148,7 +168,7 @@ if __name__ == "__main__":
         '--hyp',
         type=str,
         required=True,
-        help='Path to the hypotheses JSON file.'
+        help='Path to the hypotheses file or directory containing hypotheses files.'
     )
     parser.add_argument(
         '--metric',
@@ -165,125 +185,126 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Load reference and hypotheses files
+    # Initialize tokenizer
+    tokenizer = CharTokenizer()
+
+    # Load reference
     refs = load_reference_txt(args.ref)
-    hyps = load_hypotheses_json(args.hyp)
 
-    # Check if the number of references matches the number of hypotheses
-    if len(refs) != len(hyps):
-        print(f"Error: The number of references ({len(refs)}) does not match the number of hypotheses ({len(hyps)}).")
-        sys.exit(1)
+    # Check if `hyp` is a directory or file
+    hyp_files = []
+    if os.path.isdir(args.hyp):
+        # Get all JSON files in the directory
+        for root, _, files in os.walk(args.hyp):
+            for file in files:
+                if file.endswith(".json"):
+                    hyp_files.append(os.path.join(root, file))
+    else:
+        # Single file
+        hyp_files.append(args.hyp)
 
-    # Initialize accumulators for CER and WER
-    total_correct_cer = 0
-    total_substitutions_cer = 0
-    total_deletions_cer = 0
-    total_insertions_cer = 0
-    total_chars_ref = 0
+    # Initialize result accumulators
+    all_output_lines = []
 
-    total_correct_wer = 0
-    total_substitutions_wer = 0
-    total_deletions_wer = 0
-    total_insertions_wer = 0
-    total_words_ref = 0
+    # Process each hyp file
+    for hyp_file in hyp_files:
+        # Load hypotheses
+        hyps = load_hypotheses_json(hyp_file)
 
-    # Counters for sentences with any errors
-    sentences_with_errors_wer = 0
-    sentences_with_errors_cer = 0
+        # Check if the number of references matches the number of hypotheses
+        if len(refs) != len(hyps):
+            print(f"Error: The number of references ({len(refs)}) does not match the number of hypotheses ({len(hyps)}) in {hyp_file}.")
+            continue
 
-    count = len(refs)
+        # Initialize accumulators for CER and WER
+        total_correct_cer = total_substitutions_cer = total_deletions_cer = total_insertions_cer = total_chars_ref = 0
+        total_correct_wer = total_substitutions_wer = total_deletions_wer = total_insertions_wer = total_words_ref = 0
+        sentences_with_errors_wer = sentences_with_errors_cer = 0
 
-    # Calculate CER and WER for each sentence pair
-    for idx, (hyp, ref) in enumerate(zip(hyps, refs), 1):
-        if args.metric in ['cer', 'both']:
-            cer_score, cer_details = calculate_cer(hyp, ref)
-            total_correct_cer += cer_details["correct"]
-            total_substitutions_cer += cer_details["substitutions"]
-            total_deletions_cer += cer_details["deletions"]
-            total_insertions_cer += cer_details["insertions"]
-            total_chars_ref += len(ref)
-            if cer_details["substitutions"] + cer_details["deletions"] + cer_details["insertions"] > 0:
-                sentences_with_errors_cer += 1
+        count = len(refs)
 
+        # Calculate CER and WER for each sentence pair
+        for hyp, ref in zip(hyps, refs):
+            if args.metric in ['cer', 'both']:
+                cer_score, cer_details = calculate_cer(hyp, ref, tokenizer)
+                total_correct_cer += cer_details["correct"]
+                total_substitutions_cer += cer_details["substitutions"]
+                total_deletions_cer += cer_details["deletions"]
+                total_insertions_cer += cer_details["insertions"]
+                total_chars_ref += len(ref)
+                if cer_details["substitutions"] + cer_details["deletions"] + cer_details["insertions"] > 0:
+                    sentences_with_errors_cer += 1
+
+            if args.metric in ['wer', 'both']:
+                wer_score, wer_details = calculate_wer(hyp, ref)
+                total_correct_wer += wer_details["correct"]
+                total_substitutions_wer += wer_details["substitutions"]
+                total_deletions_wer += wer_details["deletions"]
+                total_insertions_wer += wer_details["insertions"]
+                total_words_ref += len(ref.split())
+                if wer_details["substitutions"] + wer_details["deletions"] + wer_details["insertions"] > 0:
+                    sentences_with_errors_wer += 1
+
+        # Calculate average CER and WER
+        average_cer = (total_substitutions_cer + total_deletions_cer + total_insertions_cer) / total_chars_ref * 100 if args.metric in ['cer', 'both'] else None
+        average_wer = (total_substitutions_wer + total_deletions_wer + total_insertions_wer) / total_words_ref * 100 if args.metric in ['wer', 'both'] else None
+
+        # Prepare WER metrics
         if args.metric in ['wer', 'both']:
-            wer_score, wer_details = calculate_wer(hyp, ref)
-            total_correct_wer += wer_details["correct"]
-            total_substitutions_wer += wer_details["substitutions"]
-            total_deletions_wer += wer_details["deletions"]
-            total_insertions_wer += wer_details["insertions"]
-            words_in_ref = len(ref.split())
-            total_words_ref += words_in_ref
-            if wer_details["substitutions"] + wer_details["deletions"] + wer_details["insertions"] > 0:
-                sentences_with_errors_wer += 1
+            corr_wer = (total_correct_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+            sub_wer = (total_substitutions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+            del_wer = (total_deletions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+            ins_wer = (total_insertions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+            err_wer = sub_wer + del_wer + ins_wer
+            s_err_wer = (sentences_with_errors_wer / count) * 100 if count > 0 else 0.0
 
-
-    # Calculate average CER and WER
-    average_cer = (total_substitutions_cer + total_deletions_cer + total_insertions_cer) / total_chars_ref * 100 if args.metric in ['cer', 'both'] else None
-    average_wer = (total_substitutions_wer + total_deletions_wer + total_insertions_wer) / total_words_ref * 100 if args.metric in ['wer', 'both'] else None
-
-    # Prepare WER metrics
-    if args.metric in ['wer', 'both']:
-        corr_wer = (total_correct_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        sub_wer = (total_substitutions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        del_wer = (total_deletions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        ins_wer = (total_insertions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        err_wer = sub_wer + del_wer + ins_wer
-        s_err_wer = (sentences_with_errors_wer / count) * 100 if count > 0 else 0.0
-
-        wer_table = [
-            [
-                count,
-                total_words_ref,
-                f"{corr_wer:.1f}",
-                f"{sub_wer:.1f}",
-                f"{del_wer:.1f}",
-                f"{ins_wer:.1f}",
-                f"{err_wer:.1f}",
-                f"{s_err_wer:.1f}"
+            wer_table = [
+                [
+                    count,
+                    total_words_ref,
+                    f"{corr_wer:.2f}",
+                    f"{sub_wer:.2f}",
+                    f"{del_wer:.2f}",
+                    f"{ins_wer:.2f}",
+                    f"{err_wer:.2f}",
+                    f"{s_err_wer:.2f}"
+                ]
             ]
-        ]
-        wer_headers = ["Snt", "Wrd", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
+            wer_headers = ["Snt", "Wrd", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
 
-    # Prepare CER metrics
-    if args.metric in ['cer', 'both']:
-        corr_cer = (total_correct_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        sub_cer = (total_substitutions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        del_cer = (total_deletions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        ins_cer = (total_insertions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        err_cer = sub_cer + del_cer + ins_cer
-        s_err_cer = (sentences_with_errors_cer / count) * 100 if count > 0 else 0.0
+        # Prepare CER metrics
+        if args.metric in ['cer', 'both']:
+            corr_cer = (total_correct_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+            sub_cer = (total_substitutions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+            del_cer = (total_deletions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+            ins_cer = (total_insertions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+            err_cer = sub_cer + del_cer + ins_cer
+            s_err_cer = (sentences_with_errors_cer / count) * 100 if count > 0 else 0.0
 
-        cer_table = [
-            [
-                count,
-                total_chars_ref,
-                f"{corr_cer:.1f}",
-                f"{sub_cer:.1f}",
-                f"{del_cer:.1f}",
-                f"{ins_cer:.1f}",
-                f"{err_cer:.1f}",
-                f"{s_err_cer:.1f}"
+            cer_table = [
+                [
+                    count,
+                    total_chars_ref,
+                    f"{corr_cer:.2f}",
+                    f"{sub_cer:.2f}",
+                    f"{del_cer:.2f}",
+                    f"{ins_cer:.2f}",
+                    f"{err_cer:.2f}",
+                    f"{s_err_cer:.2f}"
+                ]
             ]
-        ]
-        cer_headers = ["Snt", "Chrs", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
+            cer_headers = ["Snt", "Chrs", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
 
-    # Generate tables using tabulate
-    output_lines = []
-
-    if args.metric in ['wer', 'both']:
-        output_lines.append("WER")
-        wer_table_formatted = tabulate(wer_table, headers=wer_headers, tablefmt="github")
-        output_lines.append(wer_table_formatted)
-        # output_lines.append(f"Average WER: {average_wer:.1f}%\n")
-
-    if args.metric in ['cer', 'both']:
-        output_lines.append("CER")
-        cer_table_formatted = tabulate(cer_table, headers=cer_headers, tablefmt="github")
-        output_lines.append(cer_table_formatted)
-        # output_lines.append(f"Average CER: {average_cer:.1f}%\n")
+        # Generate tables using tabulate
+        if args.metric in ['wer', 'both']:
+            all_output_lines.append(f"Results for {hyp_file} - WER")
+            all_output_lines.append(tabulate(wer_table, headers=wer_headers, tablefmt="github"))
+        if args.metric in ['cer', 'both']:
+            all_output_lines.append(f"Results for {hyp_file} - CER")
+            all_output_lines.append(tabulate(cer_table, headers=cer_headers, tablefmt="github"))
 
     # Combine all output
-    full_output = "\n".join(output_lines)
+    full_output = "\n\n".join(all_output_lines)
 
     # Output the results
     if args.output:
@@ -296,3 +317,5 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         print(full_output)
+
+
