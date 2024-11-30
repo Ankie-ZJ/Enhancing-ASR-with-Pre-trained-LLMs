@@ -76,10 +76,12 @@ python generate_best_result.py --input_dir /ocean/projects/cis240125p/jzhang45/E
 
 ### Step 6: Evaluate Results with Regard to WER and CER
 To calculate the wer and cer for the generated final results file. Metrics can be selected as: "wer", "cer" or "both".
+
 Option1 (Calculate all hypothesis files in a given directory) Example command is shown below:
 ```bash
 python rescoring/eval_utils.py --ref "./data/text_clean.txt" --hyp "./rescoring/weighted_score/test_clean" --metric "both" --output "./rescoring/eval_results/test_clean/weighted_result.txt"
 ```
+
 Option2 (Calculate a single hypothesis file) Example command is shown below:
 ```bash
 python rescoring/eval_utils.py --ref "./data/text_clean.txt" --hyp "./rescoring/weighted_score/test_clean/1best_temp0.2_w0.5.json" --metric "both" --output "./rescoring/eval_results/test_clean/weighted_result.txt"
