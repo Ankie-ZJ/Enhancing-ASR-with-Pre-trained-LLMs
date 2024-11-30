@@ -1,7 +1,7 @@
 # Enhancing ASR with Pre-trained LLMs
 - Jing Zhang (jingzha4@andrew.cmu.edu)
-- Yuliang Jing
-- Fengyifan Chen
+- Yuliang Jing (yuliangj@andrew.cmu.edu)
+- Fengyifan Chen (fengyifc@andrew.cmu.edu)
 ## Set Up Environment
 
 To set up the environment, run the following script:
@@ -48,15 +48,24 @@ python parse_asr_result.py --base_dir /ocean/projects/cis240125p/jzhang45/espnet
 ```
 
 ### Step 3: Score N-Best Hypotheses with External LLM
-To score the N-best hypotheses using the LLM, run `llm_scoring.py`. Example command is shown below:
+To score the N-best hypotheses using the LLM, run `llm_scoring.py`.  
+
+Parameters: 1. `temp` used to adjust the temperature 2. `start_best` and `end_best` used to select the range of the input file (e.g. --start_best 1 --end_best 10, selects 1best to 10best as the input file)  
+
+Example command is shown below:
 ```bash
-python llm_scoring.py --input_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/parsed_asr_results/test_clean --output_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/llm_score_result/test_clean --temp 1.0
+python llm_scoring.py --input_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/parsed_asr_results/test_clean --output_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/llm_score_result/test_clean --temp 1.0 --start_best 1 --end_best 10
 ```
 
 ### Step 4: Rescoring N-Best Hypotheses with Weighted Scores
-Run the `rescoring.py` to calculate the weighted score. Example command is shown below:
+Option1(Process a single file) Run the `rescoring.py` to calculate the weighted score. Example command is shown below:
 ```bash
 python rescoring.py --input_file llm_score_result/test_other/1best.json --output_file weighted_score/test_other/1best.json --lm_weight 1.0
+```
+
+Option2(Processes all files in a given directory) Run the `multi_rescoring.py` to calculate the weighted score. Example command is shown below:
+```bash
+python rescoring.py --input_dir llm_score_result/test_other --output_file weighted_score/test_other --lm_weight 1.0
 ```
 
 ### Step 5: Generate Final Results for Evaluation
@@ -67,11 +76,12 @@ python generate_best_result.py --input_dir /ocean/projects/cis240125p/jzhang45/E
 
 ## TODO
 
-- [ ] Add evaluation scripts.
-- [ ] Add the ability in `llm_scoring.py` to control how many hypotheses will be passed for scoring.
+- [ ] **Add evaluation scripts.**
+- [ ] **Add the ability in `llm_scoring.py` to control how many hypotheses will be passed for scoring.**
 - [ ] Analyze how different prompts influence accuracy (e.g., score all hypotheses together in a single prompt vs. score one hypothesis at a time, or use different prompt templates to evaluate their effects on accuracy).
-- [ ] Analyze how different temperature settings influence scoring (e.g., test with temperatures like 0.1, 0.5, 1.0, and compare their effects on scores).
-- [ ] Analyze how the number of parameters influences scoring (e.g., have the LLM score a few hypotheses multiple times—e.g., 10 iterations—and analyze the score distribution to evaluate consistency and variability).
-- [ ] Analyze how the number of n-best hypotheses influences accuracy (e.g., experiment with different `nbest` values such as 3, 5, 10, or 20 and compare their impact on overall ASR accuracy).
+- [ ] **Analyze how different temperature settings influence scoring (e.g., test with temperatures like 0.1, 0.5, 1.0, and compare their effects on scores).**
+- [ ] **Analyze how different `llm weight` influence scoring**
+- [ ] Analyze how the number of parameters influences scoring (e.g., have the LLM score a few hypotheses multiple times—e.g., 10 iterations—and analyze the score distribution to evaluate consistency and variability). (TODO: Jing)
+- [ ] **Analyze how the number of n-best hypotheses influences accuracy (e.g., experiment with different `nbest` values such as 3, 5, 10, or 20 and compare their impact on overall ASR accuracy).**
 - [ ] Analyze how different LLMs influence scoring (e.g., compare scoring performance using models).
 

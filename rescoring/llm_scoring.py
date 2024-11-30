@@ -5,6 +5,7 @@ import torch
 import math
 from tqdm import tqdm
 import argparse
+import re
 
 PROMPT = \
 """
@@ -109,6 +110,9 @@ def main():
     parser.add_argument('--input_dir', type=str, required=True, help="Path to the input directory containing nbest files.")
     parser.add_argument('--output_dir', type=str, required=True, help="Path to the output directory for saving results.")
     parser.add_argument('--temp', type=float, default=1.0, help="Temperature for LLM generation.")
+    parser.add_argument('--start_best', type=int, required=True, help="Start index of nbest files to process (e.g., 1 for 1best).")
+    parser.add_argument('--end_best', type=int, required=True, help="End index of nbest files to process (e.g., 3 for 3best).")
+
 
     args = parser.parse_args()
     input_dir = args.input_dir
@@ -122,7 +126,21 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     # Get all the nbest files in the input directory
-    nbest_files = [file_name for file_name in os.listdir(input_dir) if file_name.endswith(".json")]
+    all_files = [file_name for file_name in os.listdir(input_dir) if file_name.endswith(".json")]
+
+    # Sort files by extracting the numeric prefix
+    sorted_files = sorted(all_files, key=lambda x: int(x.split("best")[0]))
+
+    # Store files within the specified range
+    nbest_files = []
+    for i in range(args.start_best, args.end_best + 1):
+        expected_file = f"{i}best.json"
+        if expected_file in sorted_files:
+            nbest_files.append(expected_file)
+        else:
+            print(f"Error: Expected file '{expected_file}' not found in {input_dir}.")
+            exit(1)  # Exit if a file in the range is missing
+
 
     for file_name in tqdm(nbest_files, desc="Processing nbest files"):
         nbest_file_path = os.path.join(input_dir, file_name)
@@ -139,6 +157,7 @@ def main():
                 value["temp"] = temperature
 
         # Save the updated data to a new file
+        file_name = re.sub(r"(\d+best)(\.json)", rf"\1_temp{args.temp}\2", file_name)
         output_file_path = os.path.join(output_dir, file_name)
         with open(output_file_path, "w") as f:
             json.dump(data, f, indent=4)
