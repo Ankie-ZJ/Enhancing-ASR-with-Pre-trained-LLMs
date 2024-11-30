@@ -48,8 +48,10 @@ python parse_asr_result.py --base_dir /ocean/projects/cis240125p/jzhang45/espnet
 ```
 
 ### Step 3: Score N-Best Hypotheses with External LLM
-To score the N-best hypotheses using the LLM, run `llm_scoring.py`.
-Parameters: 1. `temp` used to adjust the temperature 2. `start_best` and `end_best` used to select the range of the input file (e.g. --start_best 1 --end_best 10, selects 1best to 10best as the input file)
+To score the N-best hypotheses using the LLM, run `llm_scoring.py`.  
+
+Parameters: 1. `temp` used to adjust the temperature 2. `start_best` and `end_best` used to select the range of the input file (e.g. --start_best 1 --end_best 10, selects 1best to 10best as the input file)  
+
 Example command is shown below:
 ```bash
 python llm_scoring.py --input_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/parsed_asr_results/test_clean --output_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/llm_score_result/test_clean --temp 1.0 --start_best 1 --end_best 10
