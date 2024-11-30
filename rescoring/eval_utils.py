@@ -6,6 +6,8 @@ from tabulate import tabulate  # For formatted table output
 import jiwer  # Ensure the jiwer library is installed
 from tokenizer import CharTokenizer
 import string
+import os
+
 
 def calculate_cer(hyp: str, ref: str, tokenizer: CharTokenizer) -> (float, dict):
     """
