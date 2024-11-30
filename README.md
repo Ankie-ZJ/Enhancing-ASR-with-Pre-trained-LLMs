@@ -65,7 +65,7 @@ python rescoring.py --input_file llm_score_result/test_other/1best.json --output
 
 Option2(Processes all files in a given directory) Run the `multi_rescoring.py` to calculate the weighted score. Example command is shown below:
 ```bash
-python rescoring.py --input_dir llm_score_result/test_other --output_file weighted_score/test_other --lm_weight 1.0
+python multi_rescoring.py --input_dir llm_score_result/test_other --output_file weighted_score/test_other --lm_weight 1.0
 ```
 
 ### Step 5: Generate Final Results for Evaluation
