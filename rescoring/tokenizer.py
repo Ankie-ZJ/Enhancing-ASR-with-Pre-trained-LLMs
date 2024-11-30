@@ -1,3 +1,6 @@
+# This code is adapted from an external source.
+# Original source: https://github.com/espnet/espnet/blob/master/espnet2/text/char_tokenizer.py
+
 from typing import Optional, Union, Iterable, List
 from pathlib import Path
 import warnings
