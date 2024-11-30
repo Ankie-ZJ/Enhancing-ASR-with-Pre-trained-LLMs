@@ -74,6 +74,11 @@ To generate the final result file (text, token, token_int) for evaluation, run `
 python generate_best_result.py --input_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/weighted_score/test_clean --output_dir result/test_clean
 ```
 
+### Step 6: Evaluate Results With Regard To WER And CER
+```bash
+python rescoring/eval_utils.py --ref "./data/text_other.txt" --hyp "./rescoring/llm_score_result/test_other" --metric "both" --output "./rescoring/eval_results/test_other/temperature_result.txt"
+```
+
 ## TODO
 
 - [ ] **Add evaluation scripts.**
