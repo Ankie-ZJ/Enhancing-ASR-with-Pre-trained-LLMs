@@ -1,7 +1,7 @@
 # Enhancing ASR with Pre-trained LLMs
 - Jing Zhang (jingzha4@andrew.cmu.edu)
 - Yuliang Jing (yuliangj@andrew.cmu.edu)
-- Fengyifan Chen
+- Fengyifan Chen (fengyifc@andrew.cmu.edu)
 ## Set Up Environment
 
 To set up the environment, run the following script:
