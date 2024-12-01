@@ -3,3 +3,6 @@ datasets
 transformers
 accelerate
 torch
+Levenshtein
+tabulate
+jiwer
