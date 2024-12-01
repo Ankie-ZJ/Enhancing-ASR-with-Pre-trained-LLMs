@@ -78,7 +78,7 @@ def main():
 
     args = parser.parse_args()
     
-    calculate_metrics_and_generate_markdown(
+    generate_report(
         exp_dir=args.exp_dir,
         exp_tag=args.exp_tag,
         output_md_path=args.output_md
