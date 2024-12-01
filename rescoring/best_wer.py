@@ -4,10 +4,14 @@ import argparse
 import jiwer  # Ensure the jiwer library is installed
 
 
-def calculate_wer(hyp: str, ref: str) -> (float, dict):
+def calculate_wer(hyp: str, ref: str) -> float:
     """
-    Calculate Word Error Rate (WER) and provide error classification.
-    Returns WER score and a dictionary with counts of correct words, substitutions, deletions, and insertions.
+    Calculate Word Error Rate (WER).
+    Args:
+        hyp (str): Hypothesis string.
+        ref (str): Reference string.
+    Returns:
+        float: WER score as a percentage.
     """
     transformation = jiwer.Compose([])
 
@@ -19,16 +23,13 @@ def calculate_wer(hyp: str, ref: str) -> (float, dict):
     substitutions = wer_result.get('substitutions', 0)
     deletions = wer_result.get('deletions', 0)
     insertions = wer_result.get('insertions', 0)
-    # hits = wer_result.get('hits', 0)
 
     words_in_ref = len(ref_transformed.split())
 
     if words_in_ref == 0:
-        return 0.0, {"correct": 0, "substitutions": 0, "deletions": 0, "insertions": 0}
+        return 0.0
 
-    err_wer = (substitutions + deletions + insertions) / words_in_ref * 100
-
-    return err_wer
+    return (substitutions + deletions + insertions) / words_in_ref * 100
 
 
 def load_txt_file(file_path: str) -> (list, list):
@@ -44,7 +45,7 @@ def load_txt_file(file_path: str) -> (list, list):
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
             parts = line.strip().split(maxsplit=1)
-            if len(parts) == 2:  # Ensure both identifier and text are present
+            if len(parts) == 2:
                 identifiers.append(parts[0])
                 sentences.append(parts[1])
             else:
@@ -99,7 +100,7 @@ def process_hypothesis_folder(folder_path: str) -> dict:
     return hypotheses
 
 
-def find_min_wer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> list:
+def find_min_wer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> (list, list):
     """
     Find the filename of the hypothesis with the minimum WER for each reference line.
     Args:
@@ -107,9 +108,10 @@ def find_min_wer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> 
         hypotheses (dict): Dictionary of hypotheses, where keys are file names and values are lists of hypotheses.
         ref_ids (list): List of reference identifiers.
     Returns:
-        list: List of strings in the format `identifier-hypfilename`.
+        list, list: A list of strings in the format `identifier-hypfilename` and a list of WER scores.
     """
     min_wer_results = []
+    wer_scores = []
 
     for ref_idx, ref_line in enumerate(ref_lines):
         min_wer = float("inf")
@@ -125,11 +127,11 @@ def find_min_wer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> 
                     min_wer = wer
                     best_file_name = hyp_file.split(".")[0]  # Remove file extension
 
-        # Append the result in the desired format
         if best_file_name:
             min_wer_results.append(f"{ref_ids[ref_idx]}-{best_file_name}")
+            wer_scores.append(min_wer)
 
-    return min_wer_results
+    return min_wer_results, wer_scores
 
 
 def save_to_file(output_path: str, lines: list):
@@ -158,9 +160,12 @@ if __name__ == "__main__":
     hypotheses = process_hypothesis_folder(args.hyp_folder)
 
     # Find the filename with the minimum WER for each reference line
-    min_wer_filenames = find_min_wer_filenames(reference_lines, hypotheses, reference_ids)
+    min_wer_filenames, wer_scores = find_min_wer_filenames(reference_lines, hypotheses, reference_ids)
 
     # Save the result to the output file
     save_to_file(args.output, min_wer_filenames)
 
+    # Calculate and print the average WER
+    average_wer = sum(wer_scores) / len(wer_scores) if wer_scores else 0.0
+    print(f"Minimal Average WER: {average_wer:.2f}%")
     print(f"Saved filenames with minimum WER to {args.output}")
