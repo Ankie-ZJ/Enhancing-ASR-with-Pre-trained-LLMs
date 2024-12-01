@@ -9,9 +9,6 @@ def ensure_txt_extension(file_path: str) -> str:
     """
     base_name = os.path.basename(file_path)
     dir_name = os.path.dirname(file_path)
-    print("base_name",base_name)
-    print("dir_name",dir_name)
-
     # Check if the file exists and matches the criteria
     if base_name == "text" and os.path.exists(file_path):
         new_file_path = os.path.join(dir_name, "text.txt")
@@ -24,7 +21,7 @@ def ensure_txt_extension(file_path: str) -> str:
     # If no renaming needed, return the original path
     return file_path
 
-def generate_report(exp_dir: str, exp_tag: str, output_md_path: str):
+def generate_report(exp_dir: str, exp_tag: str):
     """
     Generate a report for all files in the experiment directory, recursively visiting all subfolders.
     """
@@ -132,6 +129,9 @@ def generate_report(exp_dir: str, exp_tag: str, output_md_path: str):
         markdown_content += f"| {row['Parameter']} | {row['total_chars_ref']} | {row['corr_cer']:.1f} | {row['sub_cer']:.1f} | {row['del_cer']:.1f} | {row['ins_cer']:.1f} | {row['err_cer']:.1f} | {row['s_err_cer']:.1f} |\n"
     
     # Save to markdown file
+    if not os.path.exists("eval_results"):
+        os.makedirs("eval_results")
+    output_md_path = os.path.join("eval_results", f"{exp_tag}.md")
     with open(output_md_path, 'w') as f:
         f.write(markdown_content)
 
@@ -139,17 +139,16 @@ def main():
     parser = argparse.ArgumentParser(description="Calculate CER and WER for ASR-LLM outputs and generate markdown reports.")
     parser.add_argument('--exp_dir', type=str, required=True, help="Path to the experiment directory containing hypothesis files.")
     parser.add_argument('--exp_tag', type=str, required=True, help="Experiment tag to identify the output subdirectories.")
-    parser.add_argument('--output_md', type=str, required=True, help="Path to save the generated markdown file.")
+    # parser.add_argument('--output_md', type=str, required=True, help="Path to save the generated markdown file.")
     
 
     args = parser.parse_args()
     
     generate_report(
         exp_dir=args.exp_dir,
-        exp_tag=args.exp_tag,
-        output_md_path=args.output_md
+        exp_tag=args.exp_tag
+        # output_md_path=args.output_md
     )
-    print(f"Markdown report saved to {args.output_md}")
 
 if __name__ == "__main__":
     main()
