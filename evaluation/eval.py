@@ -40,12 +40,11 @@ def generate_report(exp_dir: str, exp_tag: str):
     cer_other_table = []
 
     # Iterate over subdirectories in text_clean and text_other
-    for root, dirs, files in os.walk(os.path.join(exp_dir, 'text_clean', exp_tag)):
+    for root, dirs, files in sorted(os.walk(os.path.join(exp_dir, 'text_clean', exp_tag))):
         for file_name in sorted(files):
             # Parameters
             last_level = os.path.basename(root)
-            
-             
+               
             # Full path of the current file
             file_path_clean = os.path.join(root, file_name)
 
