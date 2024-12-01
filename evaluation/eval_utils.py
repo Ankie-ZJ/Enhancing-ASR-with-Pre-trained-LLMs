@@ -136,8 +136,126 @@ def load_json_file(file_path: str) -> list:
         print(f"Error reading hypotheses file: {e}")
         sys.exit(1)
 
+def process_cer(refs: list, hyps: list, total_sentences: int) -> dict:
+    """
+    Process CER for the given references and hypotheses.
+    Returns a dictionary of aggregated results.
+    """
+    total_correct_cer = total_substitutions_cer = total_deletions_cer = total_insertions_cer = total_chars_ref = 0
+    sentences_with_errors_cer = 0
 
-if __name__ == "__main__":
+    for hyp, ref in zip(hyps, refs):
+        cer_score, cer_details = calculate_cer(hyp, ref)
+        total_correct_cer += cer_details["correct"]
+        total_substitutions_cer += cer_details["substitutions"]
+        total_deletions_cer += cer_details["deletions"]
+        total_insertions_cer += cer_details["insertions"]
+        total_chars_ref += len(ref)
+        if cer_details["substitutions"] + cer_details["deletions"] + cer_details["insertions"] > 0:
+            sentences_with_errors_cer += 1
+
+    corr_cer = (total_correct_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+    sub_cer = (total_substitutions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+    del_cer = (total_deletions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+    ins_cer = (total_insertions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
+    err_cer = sub_cer + del_cer + ins_cer
+    s_err_cer = (sentences_with_errors_cer / total_sentences) * 100
+
+    return {
+        "total_sentences": total_sentences,
+        "total_chars_ref": total_chars_ref,
+        "corr_cer": corr_cer,
+        "sub_cer": sub_cer,
+        "del_cer": del_cer,
+        "ins_cer": ins_cer,
+        "err_cer": err_cer,
+        "s_err_cer": s_err_cer
+    }
+
+
+def process_wer(refs: list, hyps: list, total_sentences: int) -> dict:
+    """
+    Process WER for the given references and hypotheses.
+    Returns a dictionary of aggregated results.
+    """
+    total_correct_wer = total_substitutions_wer = total_deletions_wer = total_insertions_wer = total_words_ref = 0
+    sentences_with_errors_wer = 0
+
+    for hyp, ref in zip(hyps, refs):
+        wer_score, wer_details = calculate_wer(hyp, ref)
+        total_correct_wer += wer_details["correct"]
+        total_substitutions_wer += wer_details["substitutions"]
+        total_deletions_wer += wer_details["deletions"]
+        total_insertions_wer += wer_details["insertions"]
+        total_words_ref += len(ref.split())
+        if wer_details["substitutions"] + wer_details["deletions"] + wer_details["insertions"] > 0:
+            sentences_with_errors_wer += 1
+
+    corr_wer = (total_correct_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+    sub_wer = (total_substitutions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+    del_wer = (total_deletions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+    ins_wer = (total_insertions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
+    err_wer = sub_wer + del_wer + ins_wer
+    s_err_wer = (sentences_with_errors_wer / total_sentences) * 100
+
+    return {
+        "total_sentences": total_sentences,
+        "total_words_ref": total_words_ref,
+        "corr_wer": corr_wer,
+        "sub_wer": sub_wer,
+        "del_wer": del_wer,
+        "ins_wer": ins_wer,
+        "err_wer": err_wer,
+        "s_err_wer": s_err_wer
+    }
+
+
+def output_results(results: dict, metric: list, output_path: str):
+    """
+    Outputs the results for CER/ WER in the specified format.
+    """
+    all_output_lines = []
+    if metric in ['cer', 'both']:
+        cer = results["cer"]
+        cer_table = [[
+            cer["total_sentences"],
+            cer["total_chars_ref"],
+            f"{cer['corr_cer']:.2f}",
+            f"{cer['sub_cer']:.2f}",
+            f"{cer['del_cer']:.2f}",
+            f"{cer['ins_cer']:.2f}",
+            f"{cer['err_cer']:.2f}",
+            f"{cer['s_err_cer']:.2f}"
+        ]]
+        cer_headers = ["Snt", "Chrs", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
+        all_output_lines.append(tabulate(cer_table, headers=cer_headers, tablefmt="github"))
+
+    if metric in ['wer', 'both']:
+        wer = results["wer"]
+        wer_table = [[
+            wer["total_sentences"],
+            wer["total_words_ref"],
+            f"{wer['corr_wer']:.2f}",
+            f"{wer['sub_wer']:.2f}",
+            f"{wer['del_wer']:.2f}",
+            f"{wer['ins_wer']:.2f}",
+            f"{wer['err_wer']:.2f}",
+            f"{wer['s_err_wer']:.2f}"
+        ]]
+        wer_headers = ["Snt", "Wrd", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
+        all_output_lines.append(tabulate(wer_table, headers=wer_headers, tablefmt="github"))
+
+    full_output = "\n\n".join(all_output_lines)
+    if output_path:
+        with open(output_path, 'w', encoding='utf-8') as out_f:
+            out_f.write(full_output)
+        print(f"Results have been saved to {output_path}")
+    else:
+        print(full_output)
+
+
+def main():
+    # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Script to calculate CER and WER without preprocessing.")
     parser.add_argument(
         '--ref',
@@ -180,87 +298,18 @@ if __name__ == "__main__":
         print(f"Error: The number of references ({len(refs)}) does not match the number of hypotheses ({len(hyps)}).")
         sys.exit(1)
 
-    all_output_lines = []
     total_sentences = len(refs)
 
     # Initialize accumulators for CER and WER
-    total_correct_cer = total_substitutions_cer = total_deletions_cer = total_insertions_cer = total_chars_ref = 0
-    total_correct_wer = total_substitutions_wer = total_deletions_wer = total_insertions_wer = total_words_ref = 0
-    sentences_with_errors_wer = sentences_with_errors_cer = 0
-
-    # Calculate CER and WER for each sentence pair
-    for hyp, ref in zip(hyps, refs):
-        if args.metric in ['cer', 'both']:
-            cer_score, cer_details = calculate_cer(hyp, ref)
-            total_correct_cer += cer_details["correct"]
-            total_substitutions_cer += cer_details["substitutions"]
-            total_deletions_cer += cer_details["deletions"]
-            total_insertions_cer += cer_details["insertions"]
-            total_chars_ref += len(ref)
-            if cer_details["substitutions"] + cer_details["deletions"] + cer_details["insertions"] > 0:
-                sentences_with_errors_cer += 1
-
-        if args.metric in ['wer', 'both']:
-            wer_score, wer_details = calculate_wer(hyp, ref)
-            total_correct_wer += wer_details["correct"]
-            total_substitutions_wer += wer_details["substitutions"]
-            total_deletions_wer += wer_details["deletions"]
-            total_insertions_wer += wer_details["insertions"]
-            total_words_ref += len(ref.split())
-            if wer_details["substitutions"] + wer_details["deletions"] + wer_details["insertions"] > 0:
-                sentences_with_errors_wer += 1
-
-    # Prepare WER metrics
-    if args.metric in ['wer', 'both']:
-        corr_wer = (total_correct_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        sub_wer = (total_substitutions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        del_wer = (total_deletions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        ins_wer = (total_insertions_wer / total_words_ref) * 100 if total_words_ref > 0 else 0.0
-        err_wer = sub_wer + del_wer + ins_wer
-        s_err_wer = (sentences_with_errors_wer / total_sentences) * 100
-
-        wer_table = [[
-            total_sentences,
-            total_words_ref,
-            f"{corr_wer:.2f}",
-            f"{sub_wer:.2f}",
-            f"{del_wer:.2f}",
-            f"{ins_wer:.2f}",
-            f"{err_wer:.2f}",
-            f"{s_err_wer:.2f}"
-        ]]
-        wer_headers = ["Snt", "Wrd", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
-        all_output_lines.append(tabulate(wer_table, headers=wer_headers, tablefmt="github"))
-
-    # Prepare CER metrics
+    results = {}
     if args.metric in ['cer', 'both']:
-        corr_cer = (total_correct_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        sub_cer = (total_substitutions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        del_cer = (total_deletions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        ins_cer = (total_insertions_cer / total_chars_ref) * 100 if total_chars_ref > 0 else 0.0
-        err_cer = sub_cer + del_cer + ins_cer
-        s_err_cer = (sentences_with_errors_cer / total_sentences) * 100
+        results["cer"] = process_cer(refs, hyps, total_sentences)
 
-        cer_table = [[
-            total_sentences,
-            total_chars_ref,
-            f"{corr_cer:.2f}",
-            f"{sub_cer:.2f}",
-            f"{del_cer:.2f}",
-            f"{ins_cer:.2f}",
-            f"{err_cer:.2f}",
-            f"{s_err_cer:.2f}"
-        ]]
-        cer_headers = ["Snt", "Chrs", "Corr", "Sub", "Del", "Ins", "Err", "S.Err"]
-        all_output_lines.append(tabulate(cer_table, headers=cer_headers, tablefmt="github"))
+    if args.metric in ['wer', 'both']:
+        results["wer"] = process_wer(refs, hyps, total_sentences)
 
-    # Combine all output
-    full_output = "\n\n".join(all_output_lines)
+    # Generate output
+    output_results(results, args.metric, args.output)
 
-    # Output the results
-    if args.output:
-        with open(args.output, 'w', encoding='utf-8') as out_f:
-            out_f.write(full_output)
-        print(f"Results have been saved to {args.output}")
-    else:
-        print(full_output)
+if __name__ == "__main__":
+    main()
