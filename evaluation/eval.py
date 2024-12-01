@@ -98,7 +98,7 @@ def generate_report(exp_dir: str, exp_tag: str):
     markdown_content += "| Parameter   | Snt   | Wrd   | Corr  | Sub  | Del  | Ins  | Err  | S.Err |\n"
     markdown_content += "|-------------|-------|-------|-------|------|------|------|------|-------|\n"
     for row in wer_clean_table:
-        markdown_content += f"| {row['Parameter']} | {row['total_words_ref']} | {row['corr_wer']:.1f} | {row['sub_wer']:.1f} | {row['del_wer']:.1f} | {row['ins_wer']:.1f} | {row['err_wer']:.1f} | {row['s_err_wer']:.1f} |\n"
+        markdown_content += f"| {row['Parameter']} | {row['total_words_ref']} | {row['corr_wer']:.2f} | {row['sub_wer']:.2f} | {row['del_wer']:.2f} | {row['ins_wer']:.2f} | {row['err_wer']:.2f} | {row['s_err_wer']:.2f} |\n"
     
     markdown_content += "\n\n"
 
