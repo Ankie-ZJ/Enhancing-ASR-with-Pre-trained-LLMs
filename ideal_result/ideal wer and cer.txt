@@ -1,2 +1,2 @@
 | test_clean | wer: 3.77   | cer: 1.32 |
-| test_other | wer: 13.24 | cer: 5.88 |
+| test_other | wer: 13.24  | cer: 5.88 |
