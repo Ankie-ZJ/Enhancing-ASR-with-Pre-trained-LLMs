@@ -97,7 +97,7 @@ def process_hypothesis_folder(folder_path: str) -> dict:
     return hypotheses
 
 
-def find_min_cer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> list:
+def find_min_cer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> (list, list):
     """
     Find the filename of the hypothesis with the minimum CER for each reference line.
     Args:
@@ -105,9 +105,10 @@ def find_min_cer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> 
         hypotheses (dict): Dictionary of hypotheses, where keys are file names and values are lists of hypotheses.
         ref_ids (list): List of reference identifiers.
     Returns:
-        list: List of strings in the format `identifier-hypfilename`.
+        list, list: A list of strings in the format `identifier-hypfilename` and a list of CER scores.
     """
     min_cer_results = []
+    cer_scores = []
 
     for ref_idx, ref_line in enumerate(ref_lines):
         min_cer = float("inf")
@@ -126,8 +127,9 @@ def find_min_cer_filenames(ref_lines: list, hypotheses: dict, ref_ids: list) -> 
         # Append the result in the desired format
         if best_file_name:
             min_cer_results.append(f"{ref_ids[ref_idx]}-{best_file_name}")
+            cer_scores.append(min_cer)
 
-    return min_cer_results
+    return min_cer_results, cer_scores
 
 
 def save_to_file(output_path: str, lines: list):
@@ -156,9 +158,12 @@ if __name__ == "__main__":
     hypotheses = process_hypothesis_folder(args.hyp_folder)
 
     # Find the filename with the minimum CER for each reference line
-    min_cer_filenames = find_min_cer_filenames(reference_lines, hypotheses, reference_ids)
+    min_cer_filenames, cer_scores = find_min_cer_filenames(reference_lines, hypotheses, reference_ids)
 
     # Save the result to the output file
     save_to_file(args.output, min_cer_filenames)
 
+    # Calculate and print the average CER
+    average_cer = sum(cer_scores) / len(cer_scores) if cer_scores else 0.0
+    print(f"Minimal Average CER: {average_cer:.2f}%")
     print(f"Saved filenames with minimum CER to {args.output}")
