@@ -73,7 +73,7 @@ Option1(generate single result): To generate the final result file (text, token,
 ```bash
 python generate_best_result.py --input_dir /ocean/projects/cis240125p/jzhang45/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/weighted_score/test_clean --output_dir result/test_clean
 ```
-Option1(generate multiple results): To generate multiple final result files (text, token, token_int) for evaluation, run `generate_best_result_multi.py`. Example command is shown below:
+Option2(generate multiple results): To generate multiple final result files (text, token, token_int) for evaluation, run `generate_best_result_multi.py`. Example command is shown below:
 ```bash
 python generate_best_result_multi.py --input_dir /ocean/projects/cis240125p/yjing2/group_project/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/weighted_score/test_clean --output_dir result/test_clean
 ```
