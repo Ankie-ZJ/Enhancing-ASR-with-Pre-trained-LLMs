@@ -75,7 +75,7 @@ python generate_best_result.py --input_dir /ocean/projects/cis240125p/jzhang45/E
 ```
 Option2(generate multiple results): To generate multiple final result files (text, token, token_int) for evaluation, run `generate_best_result_multi.py`. Example command is shown below:
 ```bash
-python generate_best_result_multi.py --input_dir /ocean/projects/cis240125p/yjing2/group_project/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/weighted_score/test_clean --output_dir result/test_clean
+python generate_best_result_multi.py --num_best 20 --input_dir /ocean/projects/cis240125p/yjing2/group_project/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/weighted_score/test_clean --output_dir result/test_clean 
 ```
 
 ### Step 6: Evaluate Results with Regard to WER and CER
