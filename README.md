@@ -78,7 +78,14 @@ Option2(generate multiple results): To generate multiple final result files (tex
 python generate_best_result_multi.py --num_best 20 --input_dir /ocean/projects/cis240125p/yjing2/group_project/Enhancing-ASR-with-Pre-trained-LLMs/rescoring/weighted_score/test_clean --output_dir result/test_clean 
 ```
 
-### Step 6: Evaluate Results with Regard to WER and CER
+### Step 6(New): Evaluate Results with Regard to WER and CER
+![image](https://github.com/user-attachments/assets/fe976c86-4973-45f7-b580-06e9f96b186b)
+The format of exp_dir should follow the structure shown in the picture above. All the files need to be evaluated should be in the path named after exp_tag.
+```bash
+python eval.py --exp_dir test_results --exp_tag nbest_exps
+```
+
+### Step 6(Old): Evaluate Results with Regard to WER and CER
 To calculate the wer and cer for the generated final results file. Metrics can be selected as: "wer", "cer" or "both".
 
 Option1 (Calculate all hypothesis files in a given directory) Example command is shown below:
