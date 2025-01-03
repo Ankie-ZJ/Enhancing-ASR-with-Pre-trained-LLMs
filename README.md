@@ -97,15 +97,3 @@ Option2 (Calculate a single hypothesis file) Example command is shown below:
 ```bash
 python rescoring/eval_utils.py --ref "./data/text_clean.txt" --hyp "./rescoring/weighted_score/test_clean/1best_temp0.2_w0.5.json" --metric "both" --output "./rescoring/eval_results/test_clean/weighted_result.txt"
 ```
-
-## TODO
-
-- [ ] **Add evaluation scripts.**
-- [ ] **Add the ability in `llm_scoring.py` to control how many hypotheses will be passed for scoring.**
-- [ ] Analyze how different prompts influence accuracy (e.g., score all hypotheses together in a single prompt vs. score one hypothesis at a time, or use different prompt templates to evaluate their effects on accuracy).
-- [ ] **Analyze how different temperature settings influence scoring (e.g., test with temperatures like 0.1, 0.5, 1.0, and compare their effects on scores).**
-- [ ] **Analyze how different `llm weight` influence scoring**
-- [ ] Analyze how the number of parameters influences scoring (e.g., have the LLM score a few hypotheses multiple times—e.g., 10 iterations—and analyze the score distribution to evaluate consistency and variability). (TODO: Jing)
-- [ ] **Analyze how the number of n-best hypotheses influences accuracy (e.g., experiment with different `nbest` values such as 3, 5, 10, or 20 and compare their impact on overall ASR accuracy).**
-- [ ] Analyze how different LLMs influence scoring (e.g., compare scoring performance using models).
-
